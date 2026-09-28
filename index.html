@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio Botánico - Simulación de Crecimiento</title>
+    <link rel="stylesheet" href="style.css">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <!-- Panel de Información Botánica (Raycasting & Estado de Crecimiento) -->
+    <aside id="info-panel" class="hud-card">
+        <div class="card-header">
+            <h3>🌱 Análisis de Crecimiento</h3>
+            <span class="badge">Práctica 04</span>
+        </div>
+        <p id="hint-text">Haz clic en cualquier órgano vegetal para medir su desarrollo.</p>
+        <div id="plant-data" class="hidden">
+            <div class="data-row">
+                <strong>Estructura:</strong> <span id="part-name">-</span>
+            </div>
+            <div class="data-row">
+                <strong>Geometría:</strong> <span id="part-geo">-</span>
+            </div>
+            <div class="data-row">
+                <strong>Desarrollo actual:</strong> <span id="part-growth">-</span>
+            </div>
+            <div class="data-row">
+                <strong>Altura relativa (Y):</strong> <span id="part-height">-</span>
+            </div>
+            <div class="data-row">
+                <strong>Función / Diagnóstico:</strong>
+                <p id="part-desc" class="desc-text">-</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Controles de Simulación y Parámetros Ecológicos -->
+    <nav id="controls-toolbar" class="hud-card">
+        <h4>⚙️ Parámetros de Simulación Botánica</h4>
+        
+        <div class="control-group">
+            <button id="btn-toggle-sim" class="btn">⏸️ Pausar Simulación</button>
+            <button id="btn-reset-growth" class="btn">🔄 Reiniciar Crecimiento</button>
+            <button id="btn-color-leaves" class="btn">🎨 Pigmento Foliar</button>
+            <button id="btn-reset-cam" class="btn">🎥 Reiniciar Cámara</button>
+        </div>
+
+        <div class="control-group sliders-container">
+            <div class="slider-group">
+                <label for="slider-growth-speed">Velocidad Crecimiento: <span id="val-growth-speed">1.0x</span></label>
+                <input type="range" id="slider-growth-speed" min="0.1" max="3.0" step="0.1" value="1.0">
+            </div>
+
+            <div class="slider-group">
+                <label for="slider-wind">Intensidad del Viento: <span id="val-wind">1.0</span></label>
+                <input type="range" id="slider-wind" min="0.0" max="3.0" step="0.1" value="1.0">
+            </div>
+        </div>
+    </nav>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>
