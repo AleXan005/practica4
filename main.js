@@ -408,7 +408,7 @@ createGrowthPlant(0.0, 0, 1.05, 2, "LC-Control");
 createGrowthPlant(2.4, 0, 0.95, 3, "LC-Beta");
 
 // =============================================================================
-// 7. BUCLE DE ANIMACIÓN
+// 7. BUCLE DE ANIMACIÓN (VENTILACIÓN Y SIMULACIÓN DE CRECIMIENTO)
 // =============================================================================
 const clock = new THREE.Clock();
 
@@ -419,13 +419,24 @@ function animate() {
     const time = clock.getElapsedTime();
 
     if (isSimulationActive) {
+        // Avance del crecimiento
         globalGrowthProgress += delta * 0.08 * growthSpeed;
         if (globalGrowthProgress > 1.0) globalGrowthProgress = 1.0;
 
+        // Actualizar uniforms de Shader
         shaderUniforms.uTime.value = time;
         shaderUniforms.uWindIntensity.value = windIntensity;
         shaderUniforms.uGrowthProgress.value = globalGrowthProgress;
 
+        // Balanceo mecánico de tallos por viento
+        plantNodes.forEach(node => {
+            if (node.type === 'stem' && node.group) {
+                node.group.rotation.z = Math.sin(time * 2.0 + node.group.position.x) * 0.04 * windIntensity;
+                node.group.rotation.x = Math.cos(time * 1.5 + node.group.position.x) * 0.025 * windIntensity;
+            }
+        });
+
+        // Propagación de escalas por jerarquía
         plantNodes.forEach(node => {
             if (globalGrowthProgress < node.startThreshold) {
                 node.group.scale.set(0.0001, 0.0001, 0.0001);
