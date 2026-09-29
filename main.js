@@ -7,7 +7,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const container = document.getElementById('canvas-container');
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xdbeafe);
+const baseBgColor = new THREE.Color(0xdbeafe);
+const darkBgColor = new THREE.Color(0x000000);
+
+scene.background = baseBgColor.clone();
 scene.fog = new THREE.Fog(0xdbeafe, 15, 38);
 
 const initialCameraPos = new THREE.Vector3(0, 4.0, 8.5);
@@ -29,22 +32,22 @@ controls.target.set(0, 2.1, 0);
 controls.maxPolarAngle = Math.PI / 2 - 0.02;
 
 // =============================================================================
-// 2. ILUMINACIÓN BRILLANTE DE LABORATORIO
+// 2. ILUMINACIÓN BALANCEADA DE LABORATORIO
 // =============================================================================
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
 scene.add(ambientLight);
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.6);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
 dirLight.position.set(6, 11, 7);
 dirLight.castShadow = true;
 dirLight.shadow.mapSize.set(2048, 2048);
 scene.add(dirLight);
 
-const windWindowLight = new THREE.DirectionalLight(0x7dd3fc, 0.8);
+const windWindowLight = new THREE.DirectionalLight(0x7dd3fc, 0.6);
 windWindowLight.position.set(-14, 6, 2);
 scene.add(windWindowLight);
 
-const growLight = new THREE.PointLight(0xa855f7, 1.6, 8);
+const growLight = new THREE.PointLight(0xa855f7, 1.4, 8);
 growLight.position.set(0, 5.5, 0);
 scene.add(growLight);
 
@@ -82,7 +85,7 @@ const baseboard = new THREE.Mesh(
 baseboard.position.set(0, 0.2, -5.15);
 scene.add(baseboard);
 
-// Ventanal de fondo
+// Ventana posterior
 const rearWindow = new THREE.Mesh(
     new THREE.BoxGeometry(11, 4.5, 0.15),
     new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7 })
@@ -101,7 +104,7 @@ const rearGlass = new THREE.Mesh(new THREE.PlaneGeometry(10.6, 4.1), glassMat);
 rearGlass.position.set(0, 5.5, -5.04);
 scene.add(rearGlass);
 
-// Ventanas laterales de ventilación
+// Ventana lateral de ventilación
 const ventGroup = new THREE.Group();
 ventGroup.position.set(-10.9, 5.2, 0);
 ventGroup.rotation.y = Math.PI / 2;
@@ -129,7 +132,7 @@ scene.add(ventGroup);
 const steelMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2, metalness: 0.35 });
 const darkMetal = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.3 });
 
-// --- A. Mesa Principal ---
+// Mesa Principal
 const mainTable = new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.2, 2.6), steelMat);
 mainTable.position.set(0, 1.2, 0);
 mainTable.castShadow = true;
@@ -143,7 +146,7 @@ scene.add(mainTable);
     scene.add(leg);
 });
 
-// Lámpara UV colgante sobre las azucenas
+// Lámpara UV colgante
 const growLampFixture = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.15, 0.6), darkMetal);
 growLampFixture.position.set(0, 5.7, 0);
 scene.add(growLampFixture);
@@ -159,7 +162,7 @@ scene.add(growLedPanel);
     scene.add(cable);
 });
 
-// --- B. Mesa Izquierda: Centrifugación y Reactivos ---
+// Mesas laterales
 const sampleTable = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.2, 2.4), steelMat);
 sampleTable.position.set(-6.8, 1.2, 0);
 sampleTable.castShadow = true;
@@ -184,7 +187,6 @@ const centrifugeLid = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.06
 centrifugeLid.position.set(-6.8, 1.68, -0.3);
 scene.add(centrifugeLid);
 
-// --- C. Mesa Derecha: Computación y Datos ---
 const dataTable = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.2, 2.4), steelMat);
 dataTable.position.set(6.8, 1.2, 0);
 dataTable.castShadow = true;
@@ -214,6 +216,13 @@ const displayPanel = new THREE.Mesh(
 );
 displayPanel.position.set(6.8, 1.85, -0.37);
 scene.add(displayPanel);
+
+const keyboard = new THREE.Mesh(
+    new THREE.BoxGeometry(0.85, 0.02, 0.3),
+    new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.5 })
+);
+keyboard.position.set(6.8, 1.32, 0.3);
+scene.add(keyboard);
 
 // =============================================================================
 // 5. SHADERS GLSL PERSONALIZADOS Y MATERIALES
@@ -266,7 +275,7 @@ const leafShaderMaterial = new THREE.ShaderMaterial({
 });
 
 // =============================================================================
-// 6. GENERADOR DE AZUCENAS Y SIMULACIÓN DE CRECIMIENTO
+// 6. GENERADOR DE AZUCENAS Y REGISTRO DE ÓRGANOS
 // =============================================================================
 const clickableParts = [];
 const plantNodes = [];
@@ -274,6 +283,7 @@ let globalGrowthProgress = 0.0;
 let growthSpeed = 1.0;
 let windIntensity = 1.0;
 let isSimulationActive = true;
+let totalLeavesInScene = 0;
 
 function tagPart(mesh, name, desc) {
     mesh.userData = {
@@ -338,7 +348,7 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
         endThreshold: 0.4
     });
 
-    // Hojas helicoidales
+    // Hojas helicoidales (7 por planta) + 1 hoja en pecíolo lateral (total 8 por planta)
     const leafGeo = new THREE.SphereGeometry(0.28, 16, 12);
     leafGeo.scale(1.75, 0.12, 0.55);
 
@@ -366,7 +376,40 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
             startThreshold: leafStart,
             endThreshold: Math.min(1.0, leafStart + 0.2)
         });
+        totalLeavesInScene++;
     }
+
+    // Pecíolo lateral con hoja adicional
+    const branchGroup = new THREE.Group();
+    branchGroup.position.set(0, 1.1, 0);
+    branchGroup.rotation.z = plantId % 2 === 0 ? -Math.PI / 4.8 : Math.PI / 4.8;
+    stemGroup.add(branchGroup);
+
+    const branchMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.035, 0.05, 0.6, 12),
+        new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.4 })
+    );
+    branchMesh.position.y = 0.3;
+    tagPart(branchMesh, `Pecíolo Lateral #${plantId}`, "Ramificación secundaria.");
+    branchGroup.add(branchMesh);
+
+    const branchLeafNode = new THREE.Group();
+    branchLeafNode.position.set(0, 0.6, 0);
+    branchLeafNode.rotation.z = 0.35;
+    
+    const branchLeaf = new THREE.Mesh(leafGeo, leafShaderMaterial);
+    tagPart(branchLeaf, `Hoja Axilar (${specimenCode})`, "Hoja lateral en ramificación.");
+    branchLeafNode.add(branchLeaf);
+    branchGroup.add(branchLeafNode);
+
+    plantNodes.push({
+        type: 'leaf',
+        group: branchLeafNode,
+        mesh: branchLeaf,
+        startThreshold: 0.5,
+        endThreshold: 0.7
+    });
+    totalLeavesInScene++;
 
     // Flor apical
     const flowerGroup = new THREE.Group();
@@ -407,8 +450,14 @@ createGrowthPlant(-2.4, 0, 0.92, 1, "LC-Alfa");
 createGrowthPlant(0.0, 0, 1.05, 2, "LC-Control");
 createGrowthPlant(2.4, 0, 0.95, 3, "LC-Beta");
 
+// Actualizar DOM con el total de hojas registradas
+const leafTotalEl = document.getElementById('leaf-total');
+const leafCountEl = document.getElementById('leaf-count');
+const leafProgressFill = document.getElementById('leaf-progress-fill');
+if (leafTotalEl) leafTotalEl.textContent = totalLeavesInScene;
+
 // =============================================================================
-// 7. BUCLE DE ANIMACIÓN (VENTILACIÓN Y SIMULACIÓN DE CRECIMIENTO)
+// 7. BUCLE DE ANIMACIÓN (CONTADOR DE HOJAS Y SIMULACIÓN)
 // =============================================================================
 const clock = new THREE.Clock();
 
@@ -419,7 +468,7 @@ function animate() {
     const time = clock.getElapsedTime();
 
     if (isSimulationActive) {
-        // Avance del crecimiento
+        // Avance de desarrollo
         globalGrowthProgress += delta * 0.08 * growthSpeed;
         if (globalGrowthProgress > 1.0) globalGrowthProgress = 1.0;
 
@@ -436,7 +485,9 @@ function animate() {
             }
         });
 
-        // Propagación de escalas por jerarquía
+        // Propagación de escalas por jerarquía y conteo de hojas emergidas
+        let activeLeavesCount = 0;
+
         plantNodes.forEach(node => {
             if (globalGrowthProgress < node.startThreshold) {
                 node.group.scale.set(0.0001, 0.0001, 0.0001);
@@ -444,6 +495,7 @@ function animate() {
             } else if (globalGrowthProgress >= node.endThreshold) {
                 node.group.scale.set(1, 1, 1);
                 if (node.mesh) node.mesh.userData.growthPct = 100;
+                if (node.type === 'leaf') activeLeavesCount++;
             } else {
                 const localProgress = (globalGrowthProgress - node.startThreshold) / (node.endThreshold - node.startThreshold);
                 const smoothScale = THREE.MathUtils.smoothstep(localProgress, 0.0, 1.0);
@@ -455,8 +507,17 @@ function animate() {
                 }
 
                 if (node.mesh) node.mesh.userData.growthPct = Math.round(smoothScale * 100);
+                // Si la hoja ya supera el 20% de escala, la contamos como desarrollada
+                if (node.type === 'leaf' && smoothScale > 0.2) activeLeavesCount++;
             }
         });
+
+        // Actualizar UI del contador de hojas
+        if (leafCountEl) leafCountEl.textContent = activeLeavesCount;
+        if (leafProgressFill) {
+            const pct = (activeLeavesCount / totalLeavesInScene) * 100;
+            leafProgressFill.style.width = `${pct}%`;
+        }
     }
 
     controls.update();
@@ -521,7 +582,7 @@ window.addEventListener('pointerdown', (event) => {
 });
 
 // =============================================================================
-// 9. CONTROLES INTERACTIVOS UI
+// 9. CONTROLES HTML INTERACTIVOS Y MANEJO DE LUZ (ATENUACIÓN TOTAL A 0.0)
 // =============================================================================
 const btnToggleSim = document.getElementById('btn-toggle-sim');
 btnToggleSim.addEventListener('click', () => {
@@ -564,6 +625,33 @@ sliderWind.addEventListener('input', (e) => {
     windIntensity = parseFloat(e.target.value);
     valWindText.textContent = windIntensity.toFixed(1);
 });
+
+// Slider de Iluminación con atenuación a negro absoluto en 0.0
+const sliderLight = document.getElementById('slider-light');
+const valLightText = document.getElementById('val-light');
+
+if (sliderLight) {
+    sliderLight.value = 1.8;
+    if (valLightText) valLightText.textContent = "1.8";
+
+    sliderLight.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        const factor = val / 1.8;
+
+        dirLight.intensity = val;
+        ambientLight.intensity = 0.85 * factor;
+        windWindowLight.intensity = 0.6 * factor;
+        growLight.intensity = 1.4 * factor;
+
+        scene.background.lerpColors(darkBgColor, baseBgColor, Math.min(factor, 1.0));
+        scene.fog.color.lerpColors(darkBgColor, baseBgColor, Math.min(factor, 1.0));
+
+        growLedPanel.visible = factor > 0.05;
+        displayPanel.visible = factor > 0.05;
+
+        if (valLightText) valLightText.textContent = val.toFixed(1);
+    });
+}
 
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
