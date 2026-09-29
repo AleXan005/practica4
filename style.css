@@ -21,10 +21,11 @@ body {
     z-index: 1;
 }
 
+/* Tarjetas flotantes estilo cristal azul oscuro */
 .hud-card {
     position: absolute;
     z-index: 10;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.88);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -33,10 +34,33 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
+/* Ficha anatómica (Superior Izquierda) */
 #info-panel {
     top: 20px;
     left: 20px;
-    width: 330px;
+    width: 320px;
+}
+
+/* Panel de estado (Superior Derecho) */
+#status-panel {
+    top: 20px;
+    right: 20px;
+    width: 220px;
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+}
+
+.status-row span {
+    color: #94a3b8;
+}
+
+.text-green {
+    color: #4ade80 !important;
 }
 
 .card-header {
@@ -49,25 +73,25 @@ body {
 }
 
 .card-header h3 {
-    font-size: 1.05rem;
+    font-size: 1.0rem;
     color: #38bdf8;
 }
 
 .badge {
     background: #0284c7;
     color: #ffffff;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     padding: 2px 8px;
     border-radius: 9999px;
     font-weight: 600;
 }
 
-/* Contador de hojas */
+/* Barrita verde de hojas desarrolladas */
 .leaf-counter-box {
     background: rgba(30, 41, 59, 0.7);
     padding: 10px 12px;
     border-radius: 8px;
-    border: 1px solid rgba(56, 189, 248, 0.2);
+    border: 1px solid rgba(74, 222, 128, 0.25);
     margin-bottom: 12px;
 }
 
@@ -77,7 +101,7 @@ body {
 }
 
 .counter-value {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: #4ade80;
     margin: 2px 0 6px 0;
@@ -98,22 +122,15 @@ body {
     transition: width 0.2s ease-out;
 }
 
-.divider {
-    border: 0;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
-    margin: 12px 0;
-}
-
 #hint-text {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: #94a3b8;
     line-height: 1.4;
 }
 
 .data-row {
-    font-size: 0.85rem;
-    margin-bottom: 8px;
+    font-size: 0.82rem;
+    margin-bottom: 6px;
 }
 
 .data-row strong {
@@ -127,8 +144,8 @@ body {
 
 .desc-text {
     margin-top: 4px;
-    font-size: 0.8rem;
-    line-height: 1.45;
+    font-size: 0.78rem;
+    line-height: 1.4;
     color: #cbd5e1;
     background: rgba(0, 0, 0, 0.25);
     padding: 8px;
@@ -140,6 +157,7 @@ body {
     display: none;
 }
 
+/* Panel Inferior de Controles */
 #controls-toolbar {
     bottom: 20px;
     left: 50%;
@@ -147,54 +165,20 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    align-items: center;
     width: 90%;
-    max-width: 680px;
+    max-width: 640px;
 }
 
 #controls-toolbar h4 {
     font-size: 0.9rem;
     color: #cbd5e1;
-    font-weight: 500;
+    font-weight: 600;
 }
 
-.control-group {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-    width: 100%;
-}
-
-.sliders-container {
+.sliders-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-}
-
-.full-width-slider {
-    grid-column: span 2;
-}
-
-.btn {
-    background: #1e293b;
-    border: 1px solid #475569;
-    color: #f8fafc;
-    padding: 8px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.btn:hover {
-    background: #334155;
-    border-color: #38bdf8;
-}
-
-.btn:active {
-    transform: scale(0.96);
 }
 
 .slider-group {
@@ -205,7 +189,37 @@ body {
     color: #94a3b8;
 }
 
+/* Sliders con acento verde neón */
 .slider-group input[type="range"] {
-    accent-color: #38bdf8;
+    accent-color: #4ade80;
     cursor: pointer;
+}
+
+.buttons-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 4px;
+}
+
+.btn {
+    background: #1e293b;
+    border: 1px solid #475569;
+    color: #f8fafc;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    background: #334155;
+    border-color: #4ade80;
+}
+
+.btn:active {
+    transform: scale(0.96);
 }
