@@ -9,7 +9,7 @@ void main() {
 
     vec3 pos = position;
 
-    // Desplazamiento por viento proporcional a la altura relativa de la geometría
+    // Desplazamiento orgánico por viento
     float windEffect = sin(uTime * 2.5 + pos.y * 3.0) * 0.08 * uWindIntensity * max(0.0, pos.y);
     pos.x += windEffect;
     pos.z += cos(uTime * 1.8 + pos.y * 2.0) * 0.05 * uWindIntensity * max(0.0, pos.y);
