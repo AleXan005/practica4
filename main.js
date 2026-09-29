@@ -85,7 +85,6 @@ const baseboard = new THREE.Mesh(
 baseboard.position.set(0, 0.2, -5.15);
 scene.add(baseboard);
 
-// Ventana trasera
 const rearWindow = new THREE.Mesh(
     new THREE.BoxGeometry(11, 4.5, 0.15),
     new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7 })
@@ -121,7 +120,6 @@ scene.add(mainTable);
     scene.add(leg);
 });
 
-// Lámpara UV
 const growLampFixture = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.15, 0.6), darkMetal);
 growLampFixture.position.set(0, 5.7, 0);
 scene.add(growLampFixture);
@@ -131,7 +129,7 @@ growLedPanel.rotation.x = Math.PI / 2;
 growLedPanel.position.set(0, 5.62, 0);
 scene.add(growLedPanel);
 
-// Mesas laterales y equipo
+// Mesas laterales
 const sampleTable = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.2, 2.4), steelMat);
 sampleTable.position.set(-6.8, 1.2, 0);
 sampleTable.castShadow = true;
@@ -233,14 +231,16 @@ const leafShaderMaterial = new THREE.ShaderMaterial({
 });
 
 // =============================================================================
-// 5. CONSTRUCTOR DE PLANTAS Y LÓGICA DE CRECIMIENTO
+// 5. CONSTRUCTOR DE PLANTAS DINÁMICAS (SOPORTE PARA SLIDER DE RAMAS)
 // =============================================================================
-const clickableParts = [];
-const plantNodes = [];
-const leavesArray = [];
+let clickableParts = [];
+let plantNodes = [];
+let leavesArray = [];
+let plantGroups = []; // Para limpiar de la escena al cambiar el slider
 let globalGrowthProgress = 0.0;
 let growthSpeed = 1.0;
 let windIntensity = 1.0;
+let numBranchesPerPlant = 3; // Valor inicial
 let isSimulationActive = true;
 let leavesVisible = true;
 let totalLeavesInScene = 0;
@@ -262,8 +262,9 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
     plantRoot.position.set(posX, 1.3, posZ);
     plantRoot.scale.set(scale, scale, scale);
     scene.add(plantRoot);
+    plantGroups.push(plantRoot);
 
-    const potMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.6 }); // Terracota tipo compañera
+    const potMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.6 });
     const potMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.52, 1.1, 32), potMat);
     potMesh.position.y = 0.55;
     tagPart(potMesh, `Maceta Terracota #${plantId}`, "Contenedor de cerámica porosa para cultivo.");
@@ -313,6 +314,7 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
         const leafMesh = new THREE.Mesh(leafGeo, leafShaderMaterial);
         leafMesh.position.set(0.32, 0, 0);
         leafMesh.rotation.z = -0.22;
+        leafMesh.visible = leavesVisible;
         tagPart(leafMesh, `Hoja #${i + 1} (${specimenCode})`, "Estructura fotosintética laminar.");
         leafNode.add(leafMesh);
         stemGroup.add(leafNode);
@@ -329,38 +331,49 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
         totalLeavesInScene++;
     }
 
-    const branchGroup = new THREE.Group();
-    branchGroup.position.set(0, 1.1, 0);
-    branchGroup.rotation.z = plantId % 2 === 0 ? -Math.PI / 4.8 : Math.PI / 4.8;
-    stemGroup.add(branchGroup);
+    // DINÁMICO: Generar tantas ramas/pecíolos laterales como indique el slider (numBranchesPerPlant)
+    for (let b = 0; b < numBranchesPerPlant; b++) {
+        const branchGroup = new THREE.Group();
+        const heightFactor = (b + 1) / (numBranchesPerPlant + 1);
+        branchGroup.position.set(0, 0.4 + heightFactor * 1.2, 0);
+        
+        // Alternar rotaciones
+        const angleY = (b * Math.PI * 2) / numBranchesPerPlant;
+        branchGroup.rotation.y = angleY;
+        branchGroup.rotation.z = b % 2 === 0 ? -Math.PI / 4.8 : Math.PI / 4.8;
+        stemGroup.add(branchGroup);
 
-    const branchMesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.035, 0.05, 0.6, 12),
-        new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.4 })
-    );
-    branchMesh.position.y = 0.3;
-    tagPart(branchMesh, `Pecíolo Lateral #${plantId}`, "Ramificación secundaria.");
-    branchGroup.add(branchMesh);
+        const branchMesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.035, 0.05, 0.5, 12),
+            new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.4 })
+        );
+        branchMesh.position.y = 0.25;
+        tagPart(branchMesh, `Rama Lateral #${b + 1} (${specimenCode})`, "Ramificación secundaria regulable.");
+        branchGroup.add(branchMesh);
 
-    const branchLeafNode = new THREE.Group();
-    branchLeafNode.position.set(0, 0.6, 0);
-    branchLeafNode.rotation.z = 0.35;
-    
-    const branchLeaf = new THREE.Mesh(leafGeo, leafShaderMaterial);
-    tagPart(branchLeaf, `Hoja Axilar (${specimenCode})`, "Hoja de rama secundaria.");
-    branchLeafNode.add(branchLeaf);
-    branchGroup.add(branchLeafNode);
-    leavesArray.push(branchLeaf);
+        const branchLeafNode = new THREE.Group();
+        branchLeafNode.position.set(0, 0.5, 0);
+        branchLeafNode.rotation.z = 0.35;
 
-    plantNodes.push({
-        type: 'leaf',
-        group: branchLeafNode,
-        mesh: branchLeaf,
-        startThreshold: 0.5,
-        endThreshold: 0.7
-    });
-    totalLeavesInScene++;
+        const branchLeaf = new THREE.Mesh(leafGeo, leafShaderMaterial);
+        branchLeaf.visible = leavesVisible;
+        tagPart(branchLeaf, `Hoja de Rama #${b + 1} (${specimenCode})`, "Hoja de rama secundaria.");
+        branchLeafNode.add(branchLeaf);
+        branchGroup.add(branchLeafNode);
+        leavesArray.push(branchLeaf);
 
+        const startT = 0.4 + (b / numBranchesPerPlant) * 0.3;
+        plantNodes.push({
+            type: 'leaf',
+            group: branchLeafNode,
+            mesh: branchLeaf,
+            startThreshold: startT,
+            endThreshold: Math.min(1.0, startT + 0.2)
+        });
+        totalLeavesInScene++;
+    }
+
+    // Flor apical
     const flowerGroup = new THREE.Group();
     flowerGroup.position.set(0, stemHeight, 0);
     stemGroup.add(flowerGroup);
@@ -395,14 +408,30 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
     });
 }
 
-createGrowthPlant(-2.4, 0, 0.92, 1, "LC-Alfa");
-createGrowthPlant(0.0, 0, 1.05, 2, "LC-Control");
-createGrowthPlant(2.4, 0, 0.95, 3, "LC-Beta");
+// Función para regenerar las plantas cuando se cambia el número de ramas
+function rebuildAllPlants() {
+    // 1. Eliminar plantas anteriores de la escena
+    plantGroups.forEach(group => scene.remove(group));
+    
+    // 2. Limpiar arreglos
+    plantGroups = [];
+    clickableParts = [];
+    plantNodes = [];
+    leavesArray = [];
+    totalLeavesInScene = 0;
 
-const leafTotalEl = document.getElementById('leaf-total');
-const leafCountEl = document.getElementById('leaf-count');
-const leafProgressFill = document.getElementById('leaf-progress-fill');
-if (leafTotalEl) leafTotalEl.textContent = totalLeavesInScene;
+    // 3. Crear plantas con la nueva cantidad de ramas
+    createGrowthPlant(-2.4, 0, 0.92, 1, "LC-Alfa");
+    createGrowthPlant(0.0, 0, 1.05, 2, "LC-Control");
+    createGrowthPlant(2.4, 0, 0.95, 3, "LC-Beta");
+
+    // 4. Actualizar contador total de hojas en la interfaz
+    const leafTotalEl = document.getElementById('leaf-total');
+    if (leafTotalEl) leafTotalEl.textContent = totalLeavesInScene;
+}
+
+// Construcción inicial
+rebuildAllPlants();
 
 // =============================================================================
 // 6. BUCLE DE ANIMACIÓN Y ACTUALIZACIÓN DE ESTADOS
@@ -412,6 +441,8 @@ const clock = new THREE.Clock();
 const statusProgressEl = document.getElementById('status-progress');
 const statusWindEl = document.getElementById('status-wind');
 const statusStateEl = document.getElementById('status-state');
+const leafCountEl = document.getElementById('leaf-count');
+const leafProgressFill = document.getElementById('leaf-progress-fill');
 
 function animate() {
     requestAnimationFrame(animate);
@@ -459,7 +490,6 @@ function animate() {
             }
         });
 
-        // Actualizar UI de hojas y tarjetas superiores
         const totalPct = Math.round(globalGrowthProgress * 100);
         if (leafCountEl) leafCountEl.textContent = activeLeavesCount;
         if (leafProgressFill) leafProgressFill.style.width = `${(activeLeavesCount / totalLeavesInScene) * 100}%`;
@@ -573,6 +603,15 @@ const valGrowthSpeedText = document.getElementById('val-growth-speed');
 sliderGrowthSpeed.addEventListener('input', (e) => {
     growthSpeed = parseFloat(e.target.value);
     valGrowthSpeedText.textContent = `${growthSpeed.toFixed(1)}x`;
+});
+
+// CONTROL DEL SLIDER DE RAMAS REAL Y REBUILD
+const sliderBranches = document.getElementById('slider-branches');
+const valBranchesText = document.getElementById('val-branches');
+sliderBranches.addEventListener('input', (e) => {
+    numBranchesPerPlant = parseInt(e.target.value, 10);
+    valBranchesText.textContent = numBranchesPerPlant;
+    rebuildAllPlants(); // Vuelve a construir las plantas en tiempo real
 });
 
 const sliderWind = document.getElementById('slider-wind');
