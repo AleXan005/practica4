@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // =============================================================================
-// 1. CONFIGURACIÓN BASE Y ESCENA DEL LABORATORIO
+// 1. CONFIGURACIÓN BASE Y ESCENA CLARA DE LABORATORIO
 // =============================================================================
 const container = document.getElementById('canvas-container');
 
@@ -52,7 +52,7 @@ growLight.position.set(0, 5.5, 0);
 scene.add(growLight);
 
 // =============================================================================
-// 3. ARQUITECTURA DEL LABORATORIO Y DECORACIÓN DE FONDO
+// 3. ARQUITECTURA DEL LABORATORIO Y DECORACIÓN
 // =============================================================================
 const floorMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(32, 32),
@@ -85,7 +85,7 @@ const baseboard = new THREE.Mesh(
 baseboard.position.set(0, 0.2, -5.15);
 scene.add(baseboard);
 
-// Ventana posterior
+// Ventana trasera
 const rearWindow = new THREE.Mesh(
     new THREE.BoxGeometry(11, 4.5, 0.15),
     new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7 })
@@ -104,35 +104,10 @@ const rearGlass = new THREE.Mesh(new THREE.PlaneGeometry(10.6, 4.1), glassMat);
 rearGlass.position.set(0, 5.5, -5.04);
 scene.add(rearGlass);
 
-// Ventana lateral de ventilación
-const ventGroup = new THREE.Group();
-ventGroup.position.set(-10.9, 5.2, 0);
-ventGroup.rotation.y = Math.PI / 2;
-
-const ventFrame = new THREE.Mesh(
-    new THREE.BoxGeometry(6.5, 3.8, 0.15),
-    new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 })
-);
-ventGroup.add(ventFrame);
-
-for (let i = -1.5; i <= 1.5; i += 0.4) {
-    const louver = new THREE.Mesh(
-        new THREE.BoxGeometry(6.1, 0.22, 0.02),
-        new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.5 })
-    );
-    louver.position.set(0, i, 0.05);
-    louver.rotation.x = -0.45;
-    ventGroup.add(louver);
-}
-scene.add(ventGroup);
-
-// =============================================================================
-// 4. MESAS Y EQUIPO CIENTÍFICO DECORATIVO
-// =============================================================================
+// Mesas
 const steelMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2, metalness: 0.35 });
 const darkMetal = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.3 });
 
-// Mesa Principal
 const mainTable = new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.2, 2.6), steelMat);
 mainTable.position.set(0, 1.2, 0);
 mainTable.castShadow = true;
@@ -146,7 +121,7 @@ scene.add(mainTable);
     scene.add(leg);
 });
 
-// Lámpara UV colgante
+// Lámpara UV
 const growLampFixture = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.15, 0.6), darkMetal);
 growLampFixture.position.set(0, 5.7, 0);
 scene.add(growLampFixture);
@@ -156,13 +131,7 @@ growLedPanel.rotation.x = Math.PI / 2;
 growLedPanel.position.set(0, 5.62, 0);
 scene.add(growLedPanel);
 
-[-2.8, 2.8].forEach(x => {
-    const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 2.0, 8), darkMetal);
-    cable.position.set(x, 6.7, 0);
-    scene.add(cable);
-});
-
-// Mesas laterales
+// Mesas laterales y equipo
 const sampleTable = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.2, 2.4), steelMat);
 sampleTable.position.set(-6.8, 1.2, 0);
 sampleTable.castShadow = true;
@@ -182,10 +151,6 @@ const centrifuge = new THREE.Mesh(
 centrifuge.position.set(-6.8, 1.48, -0.3);
 centrifuge.castShadow = true;
 scene.add(centrifuge);
-
-const centrifugeLid = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.06, 24), darkMetal);
-centrifugeLid.position.set(-6.8, 1.68, -0.3);
-scene.add(centrifugeLid);
 
 const dataTable = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.2, 2.4), steelMat);
 dataTable.position.set(6.8, 1.2, 0);
@@ -217,15 +182,8 @@ const displayPanel = new THREE.Mesh(
 displayPanel.position.set(6.8, 1.85, -0.37);
 scene.add(displayPanel);
 
-const keyboard = new THREE.Mesh(
-    new THREE.BoxGeometry(0.85, 0.02, 0.3),
-    new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.5 })
-);
-keyboard.position.set(6.8, 1.32, 0.3);
-scene.add(keyboard);
-
 // =============================================================================
-// 5. SHADERS GLSL PERSONALIZADOS Y MATERIALES
+// 4. SHADER GLSL DE VIENTO Y COLOR
 // =============================================================================
 const vertexShaderSource = `
     uniform float uTime;
@@ -275,14 +233,16 @@ const leafShaderMaterial = new THREE.ShaderMaterial({
 });
 
 // =============================================================================
-// 6. GENERADOR DE AZUCENAS Y REGISTRO DE ÓRGANOS
+// 5. CONSTRUCTOR DE PLANTAS Y LÓGICA DE CRECIMIENTO
 // =============================================================================
 const clickableParts = [];
 const plantNodes = [];
+const leavesArray = [];
 let globalGrowthProgress = 0.0;
 let growthSpeed = 1.0;
 let windIntensity = 1.0;
 let isSimulationActive = true;
+let leavesVisible = true;
 let totalLeavesInScene = 0;
 
 function tagPart(mesh, name, desc) {
@@ -303,19 +263,10 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
     plantRoot.scale.set(scale, scale, scale);
     scene.add(plantRoot);
 
-    const tagMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(0.52, 0.16, 0.02),
-        new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 })
-    );
-    tagMesh.position.set(0, 0.08, 0.88);
-    tagMesh.rotation.x = -0.35;
-    tagPart(tagMesh, `Ficha Clínica [${specimenCode}]`, "Registro de tasa de elongación y morfagénesis.");
-    plantRoot.add(tagMesh);
-
-    const potMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.28 });
+    const potMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.6 }); // Terracota tipo compañera
     const potMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.52, 1.1, 32), potMat);
     potMesh.position.y = 0.55;
-    tagPart(potMesh, `Maceta Hidropónica #${plantId}`, "Contenedor estéril de polímero biológicamente inerte.");
+    tagPart(potMesh, `Maceta Terracota #${plantId}`, "Contenedor de cerámica porosa para cultivo.");
     plantRoot.add(potMesh);
 
     const soilMesh = new THREE.Mesh(
@@ -323,10 +274,9 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
         new THREE.MeshStandardMaterial({ color: 0x1f1614, roughness: 0.95 })
     );
     soilMesh.position.y = 1.0;
-    tagPart(soilMesh, `Sustrato Nutritivo #${plantId}`, "Medio de soporte enriquecido con turba y perlita.");
+    tagPart(soilMesh, `Sustrato Nutritivo #${plantId}`, "Mezcla de turba estéril.");
     plantRoot.add(soilMesh);
 
-    // Tallo principal
     const stemGroup = new THREE.Group();
     stemGroup.position.set(0, 1.1, 0);
     plantRoot.add(stemGroup);
@@ -337,7 +287,7 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
         new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.35 })
     );
     stemMesh.position.y = stemHeight / 2;
-    tagPart(stemMesh, `Tallo Caulinario #${plantId}`, "Haz vascular xilemático y floemático.");
+    tagPart(stemMesh, `Tallo Caulinario #${plantId}`, "Estructura soporte y vascular.");
     stemGroup.add(stemMesh);
 
     plantNodes.push({
@@ -348,7 +298,6 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
         endThreshold: 0.4
     });
 
-    // Hojas helicoidales (7 por planta) + 1 hoja en pecíolo lateral (total 8 por planta)
     const leafGeo = new THREE.SphereGeometry(0.28, 16, 12);
     leafGeo.scale(1.75, 0.12, 0.55);
 
@@ -364,9 +313,10 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
         const leafMesh = new THREE.Mesh(leafGeo, leafShaderMaterial);
         leafMesh.position.set(0.32, 0, 0);
         leafMesh.rotation.z = -0.22;
-        tagPart(leafMesh, `Hoja #${i + 1} (${specimenCode})`, "Órgano fotosintético foliar con tejido clorofílico.");
+        tagPart(leafMesh, `Hoja #${i + 1} (${specimenCode})`, "Estructura fotosintética laminar.");
         leafNode.add(leafMesh);
         stemGroup.add(leafNode);
+        leavesArray.push(leafMesh);
 
         const leafStart = 0.3 + (i / numLeaves) * 0.4;
         plantNodes.push({
@@ -379,7 +329,6 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
         totalLeavesInScene++;
     }
 
-    // Pecíolo lateral con hoja adicional
     const branchGroup = new THREE.Group();
     branchGroup.position.set(0, 1.1, 0);
     branchGroup.rotation.z = plantId % 2 === 0 ? -Math.PI / 4.8 : Math.PI / 4.8;
@@ -398,9 +347,10 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
     branchLeafNode.rotation.z = 0.35;
     
     const branchLeaf = new THREE.Mesh(leafGeo, leafShaderMaterial);
-    tagPart(branchLeaf, `Hoja Axilar (${specimenCode})`, "Hoja lateral en ramificación.");
+    tagPart(branchLeaf, `Hoja Axilar (${specimenCode})`, "Hoja de rama secundaria.");
     branchLeafNode.add(branchLeaf);
     branchGroup.add(branchLeafNode);
+    leavesArray.push(branchLeaf);
 
     plantNodes.push({
         type: 'leaf',
@@ -411,7 +361,6 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
     });
     totalLeavesInScene++;
 
-    // Flor apical
     const flowerGroup = new THREE.Group();
     flowerGroup.position.set(0, stemHeight, 0);
     stemGroup.add(flowerGroup);
@@ -421,7 +370,7 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
         new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25 })
     );
     pistil.position.y = 0.12;
-    tagPart(pistil, `Pistilo / Receptáculo (${specimenCode})`, "Centro floral reproductor.");
+    tagPart(pistil, `Pistilo (${specimenCode})`, "Órgano reproductor.");
     flowerGroup.add(pistil);
 
     const petalGeo = new THREE.ConeGeometry(0.28, 0.95, 16);
@@ -434,7 +383,7 @@ function createGrowthPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = 
         petal.rotation.y = angle;
         petal.rotation.z = -Math.PI / 4;
         petal.position.set(Math.cos(angle) * 0.32, 0.4, Math.sin(angle) * 0.32);
-        tagPart(petal, `Pétalo #${p + 1} (${specimenCode})`, "Tépalo corolino blanco.");
+        tagPart(petal, `Pétalo #${p + 1} (${specimenCode})`, "Tépalo corolino.");
         flowerGroup.add(petal);
     }
 
@@ -450,16 +399,19 @@ createGrowthPlant(-2.4, 0, 0.92, 1, "LC-Alfa");
 createGrowthPlant(0.0, 0, 1.05, 2, "LC-Control");
 createGrowthPlant(2.4, 0, 0.95, 3, "LC-Beta");
 
-// Actualizar DOM con el total de hojas registradas
 const leafTotalEl = document.getElementById('leaf-total');
 const leafCountEl = document.getElementById('leaf-count');
 const leafProgressFill = document.getElementById('leaf-progress-fill');
 if (leafTotalEl) leafTotalEl.textContent = totalLeavesInScene;
 
 // =============================================================================
-// 7. BUCLE DE ANIMACIÓN (CONTADOR DE HOJAS Y SIMULACIÓN)
+// 6. BUCLE DE ANIMACIÓN Y ACTUALIZACIÓN DE ESTADOS
 // =============================================================================
 const clock = new THREE.Clock();
+
+const statusProgressEl = document.getElementById('status-progress');
+const statusWindEl = document.getElementById('status-wind');
+const statusStateEl = document.getElementById('status-state');
 
 function animate() {
     requestAnimationFrame(animate);
@@ -468,16 +420,13 @@ function animate() {
     const time = clock.getElapsedTime();
 
     if (isSimulationActive) {
-        // Avance de desarrollo
         globalGrowthProgress += delta * 0.08 * growthSpeed;
         if (globalGrowthProgress > 1.0) globalGrowthProgress = 1.0;
 
-        // Actualizar uniforms de Shader
         shaderUniforms.uTime.value = time;
         shaderUniforms.uWindIntensity.value = windIntensity;
         shaderUniforms.uGrowthProgress.value = globalGrowthProgress;
 
-        // Balanceo mecánico de tallos por viento
         plantNodes.forEach(node => {
             if (node.type === 'stem' && node.group) {
                 node.group.rotation.z = Math.sin(time * 2.0 + node.group.position.x) * 0.04 * windIntensity;
@@ -485,7 +434,6 @@ function animate() {
             }
         });
 
-        // Propagación de escalas por jerarquía y conteo de hojas emergidas
         let activeLeavesCount = 0;
 
         plantNodes.forEach(node => {
@@ -507,16 +455,18 @@ function animate() {
                 }
 
                 if (node.mesh) node.mesh.userData.growthPct = Math.round(smoothScale * 100);
-                // Si la hoja ya supera el 20% de escala, la contamos como desarrollada
                 if (node.type === 'leaf' && smoothScale > 0.2) activeLeavesCount++;
             }
         });
 
-        // Actualizar UI del contador de hojas
+        // Actualizar UI de hojas y tarjetas superiores
+        const totalPct = Math.round(globalGrowthProgress * 100);
         if (leafCountEl) leafCountEl.textContent = activeLeavesCount;
-        if (leafProgressFill) {
-            const pct = (activeLeavesCount / totalLeavesInScene) * 100;
-            leafProgressFill.style.width = `${pct}%`;
+        if (leafProgressFill) leafProgressFill.style.width = `${(activeLeavesCount / totalLeavesInScene) * 100}%`;
+        if (statusProgressEl) statusProgressEl.textContent = `${totalPct}%`;
+        if (statusWindEl) statusWindEl.textContent = windIntensity.toFixed(1);
+        if (statusStateEl) {
+            statusStateEl.textContent = totalPct >= 100 ? "Completado" : "Creciendo";
         }
     }
 
@@ -526,7 +476,7 @@ function animate() {
 animate();
 
 // =============================================================================
-// 8. RAYCASTING Y DETECCIÓN CLÍNICA
+// 7. RAYCASTING Y EVENTOS DE INTERACCIÓN
 // =============================================================================
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -555,9 +505,7 @@ window.addEventListener('pointerdown', (event) => {
         const target = hits[0].object;
 
         if (lastSelectedMesh && lastSelectedMesh !== target && lastSelectedColor) {
-            if (lastSelectedMesh.material.color) {
-                lastSelectedMesh.material.color.setHex(lastSelectedColor);
-            }
+            if (lastSelectedMesh.material.color) lastSelectedMesh.material.color.setHex(lastSelectedColor);
         }
 
         if (lastSelectedMesh !== target) {
@@ -582,12 +530,13 @@ window.addEventListener('pointerdown', (event) => {
 });
 
 // =============================================================================
-// 9. CONTROLES HTML INTERACTIVOS Y MANEJO DE LUZ (ATENUACIÓN TOTAL A 0.0)
+// 8. CONTROLES HTML Y EVENTOS
 // =============================================================================
 const btnToggleSim = document.getElementById('btn-toggle-sim');
 btnToggleSim.addEventListener('click', () => {
     isSimulationActive = !isSimulationActive;
-    btnToggleSim.textContent = isSimulationActive ? '⏸️ Pausar Simulación' : '▶️ Reanudar Simulación';
+    btnToggleSim.textContent = isSimulationActive ? '⏸️ Pausar' : '▶️ Reanudar';
+    if (statusStateEl) statusStateEl.textContent = isSimulationActive ? "Creciendo" : "Pausado";
 });
 
 document.getElementById('btn-reset-growth').addEventListener('click', () => {
@@ -604,6 +553,13 @@ document.getElementById('btn-color-leaves').addEventListener('click', () => {
     paletteIdx = (paletteIdx + 1) % leafPalettes.length;
     shaderUniforms.uBaseColor.value.setHex(leafPalettes[paletteIdx].base);
     shaderUniforms.uTipColor.value.setHex(leafPalettes[paletteIdx].tip);
+});
+
+const btnToggleLeaves = document.getElementById('btn-toggle-leaves');
+btnToggleLeaves.addEventListener('click', () => {
+    leavesVisible = !leavesVisible;
+    leavesArray.forEach(leaf => leaf.visible = leavesVisible);
+    btnToggleLeaves.textContent = leavesVisible ? '👁️ Ocultar hojas' : '👁️ Mostrar hojas';
 });
 
 document.getElementById('btn-reset-cam').addEventListener('click', () => {
@@ -626,10 +582,8 @@ sliderWind.addEventListener('input', (e) => {
     valWindText.textContent = windIntensity.toFixed(1);
 });
 
-// Slider de Iluminación con atenuación a negro absoluto en 0.0
 const sliderLight = document.getElementById('slider-light');
 const valLightText = document.getElementById('val-light');
-
 if (sliderLight) {
     sliderLight.value = 1.8;
     if (valLightText) valLightText.textContent = "1.8";
