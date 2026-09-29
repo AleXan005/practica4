@@ -18,14 +18,14 @@
 <body>
     <div id="canvas-container"></div>
 
-    <!-- Panel de Información Botánica y Registro de Métricas -->
+    <!-- Panel Superior Izquierdo: Ficha de Crecimiento / Raycasting -->
     <aside id="info-panel" class="hud-card">
         <div class="card-header">
-            <h3>🌱 Análisis de Crecimiento</h3>
-            <span class="badge">Práctica 04</span>
+            <h3>🌿 Ficha de Crecimiento</h3>
+            <span class="badge">Raycasting</span>
         </div>
         
-        <!-- Contador dinámico de órganos foliados -->
+        <!-- Contador de Hojas Integrado -->
         <div class="leaf-counter-box">
             <div class="counter-title">🍃 Hojas Desarrolladas:</div>
             <div class="counter-value"><span id="leaf-count">0</span> / <span id="leaf-total">24</span></div>
@@ -34,9 +34,7 @@
             </div>
         </div>
 
-        <hr class="divider">
-
-        <p id="hint-text">Haz clic en cualquier órgano vegetal para medir su desarrollo.</p>
+        <p id="hint-text">Haz clic sobre una estructura de la planta para examinarla.</p>
         <div id="plant-data" class="hidden">
             <div class="data-row">
                 <strong>Estructura:</strong> <span id="part-name">-</span>
@@ -45,44 +43,66 @@
                 <strong>Geometría:</strong> <span id="part-geo">-</span>
             </div>
             <div class="data-row">
-                <strong>Desarrollo actual:</strong> <span id="part-growth">-</span>
+                <strong>Crecimiento local:</strong> <span id="part-growth">-</span>
             </div>
             <div class="data-row">
                 <strong>Altura relativa (Y):</strong> <span id="part-height">-</span>
             </div>
             <div class="data-row">
-                <strong>Función / Diagnóstico:</strong>
+                <strong>Diagnóstico:</strong>
                 <p id="part-desc" class="desc-text">-</p>
             </div>
         </div>
     </aside>
 
-    <!-- Controles de Simulación y Parámetros Ecológicos -->
-    <nav id="controls-toolbar" class="hud-card">
-        <h4>⚙️ Parámetros de Simulación Botánica</h4>
-        
-        <div class="control-group">
-            <button id="btn-toggle-sim" class="btn">⏸️ Pausar Simulación</button>
-            <button id="btn-reset-growth" class="btn">🔄 Reiniciar Crecimiento</button>
-            <button id="btn-color-leaves" class="btn">🎨 Pigmento Foliar</button>
-            <button id="btn-reset-cam" class="btn">🎥 Reiniciar Cámara</button>
+    <!-- Panel Superior Derecho: Estado de la Simulación -->
+    <aside id="status-panel" class="hud-card">
+        <div class="card-header">
+            <h3>📌 Estado de Simulación</h3>
         </div>
+        <div class="status-row">
+            <span>Desarrollo:</span> <strong id="status-progress">0%</strong>
+        </div>
+        <div class="status-row">
+            <span>Viento:</span> <strong id="status-wind">1.0</strong>
+        </div>
+        <div class="status-row">
+            <span>Estado:</span> <strong id="status-state" class="text-green">Creciendo</strong>
+        </div>
+    </aside>
 
-        <div class="control-group sliders-container">
+    <!-- Panel Inferior: Simulador de Crecimiento y Sliders Estilizados -->
+    <nav id="controls-toolbar" class="hud-card">
+        <h4>⚙️ Simulador de Crecimiento</h4>
+        
+        <div class="sliders-grid">
             <div class="slider-group">
-                <label for="slider-growth-speed">Velocidad Crecimiento: <span id="val-growth-speed">1.0x</span></label>
+                <label for="slider-growth-speed">⚡ Velocidad de crecimiento: <span id="val-growth-speed">1.0x</span></label>
                 <input type="range" id="slider-growth-speed" min="0.1" max="3.0" step="0.1" value="1.0">
             </div>
 
             <div class="slider-group">
-                <label for="slider-wind">Intensidad del Viento: <span id="val-wind">1.0</span></label>
+                <label for="slider-branches">🌿 Número de ramas: <span id="val-branches">3</span></label>
+                <input type="range" id="slider-branches" min="1" max="5" step="1" value="3">
+            </div>
+
+            <div class="slider-group">
+                <label for="slider-wind">💨 Intensidad del viento: <span id="val-wind">1.0</span></label>
                 <input type="range" id="slider-wind" min="0.0" max="3.0" step="0.1" value="1.0">
             </div>
 
-            <div class="slider-group full-width-slider">
-                <label for="slider-light">Iluminación General: <span id="val-light">1.8</span></label>
+            <div class="slider-group">
+                <label for="slider-light">💡 Intensidad de luz: <span id="val-light">1.8</span></label>
                 <input type="range" id="slider-light" min="0.0" max="4.0" step="0.1" value="1.8">
             </div>
+        </div>
+
+        <div class="control-group buttons-row">
+            <button id="btn-toggle-sim" class="btn">⏸️ Pausar</button>
+            <button id="btn-reset-growth" class="btn">🔄 Reiniciar crecimiento</button>
+            <button id="btn-color-leaves" class="btn">🎨 Color hojas</button>
+            <button id="btn-toggle-leaves" class="btn">👁️ Ocultar hojas</button>
+            <button id="btn-reset-cam" class="btn">🎥 Reiniciar Cámara</button>
         </div>
     </nav>
 
